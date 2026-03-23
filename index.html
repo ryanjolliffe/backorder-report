@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Backorder ETA Dashboard</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #e6edf4;
+      --bg-soft: #f1f5f9;
+      --card: rgba(255,255,255,0.96);
+      --card-strong: rgba(255,255,255,0.99);
+      --ink: #163046;
+      --muted: #5f7287;
+      --line: #c9d8e7;
+      --accent: #0f5ea8;
+      --accent-soft: #e8f2fb;
+      --danger-soft: #fdecec;
+      --danger: #b42318;
+      --warning-soft: #fff5df;
+      --warning: #9a6700;
+      --success-soft: #e9f8ef;
+      --success: #0a6b3b;
+      --shadow: 0 14px 34px rgba(9, 30, 66, 0.10);
+      --radius: 18px;
+    }
+    body {
+      background:
+        linear-gradient(180deg, #eef3f8 0%, #e6edf4 100%);
+      color: var(--ink);
+      min-height: 100vh;
+    }
+    .page-wrap {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 28px 18px 42px;
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(15, 94, 168, 0.98), rgba(16, 76, 130, 0.95));
+      color: #fff;
+      border-radius: 26px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: auto -80px -80px auto;
+      width: 240px;
+      height: 240px;
+      border-radius: 999px;
+      background: rgba(255,255,255,0.08);
+    }
+    .eyebrow {
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      font-size: .75rem;
+      font-weight: 700;
+      opacity: .85;
+    }
+    .hero h1 {
+      font-size: clamp(1.8rem, 3vw, 2.7rem);
+      font-weight: 700;
+      margin: 8px 0 10px;
+      letter-spacing: -.02em;
+    }
+    .hero p {
+      margin: 0;
+      max-width: 860px;
+      color: rgba(255,255,255,0.88);
+    }
+    .hero-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .hero-meta .chip {
+      background: rgba(255,255,255,0.12);
+      border: 1px solid rgba(255,255,255,0.16);
+      color: #fff;
+    }
+    .surface {
+      background: var(--card);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    .section-divider {
+      height: 1px;
+      margin: 28px 8px;
+      background: linear-gradient(90deg, transparent 0%, #bed0e1 14%, #bed0e1 86%, transparent 100%);
+      opacity: 0.95;
+    }
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .kpi-card {
+      padding: 18px;
+      min-height: 128px;
+    }
+    .kpi-label {
+      font-size: .82rem;
+      color: var(--muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .kpi-value {
+      font-size: clamp(1.4rem, 2vw, 2rem);
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -.02em;
+    }
+    .kpi-sub {
+      color: var(--muted);
+      font-size: .88rem;
+      margin-top: 8px;
+    }
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.7fr .9fr .9fr auto auto;
+      gap: 12px;
+      padding: 18px;
+      margin-top: 20px;
+      align-items: end;
+      position: sticky;
+      top: 12px;
+      z-index: 20;
+      background: rgba(230,237,244,0.96);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+    }
+    .toolbar .form-label {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .toolbar .form-control,
+    .toolbar .form-select {
+      border-radius: 12px;
+      border-color: var(--line);
+      min-height: 46px;
+      box-shadow: none;
+    }
+    .toolbar .btn {
+      min-height: 46px;
+      border-radius: 12px;
+      font-weight: 600;
+    }
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: end;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #d9e4ef;
+    }
+    .section-title h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin: 0;
+      letter-spacing: -.01em;
+    }
+    .section-title p {
+      color: var(--muted);
+      margin: 0;
+      font-size: .92rem;
+    }
+    .chart-card {
+      padding: 20px;
+      margin-top: 18px;
+      height: 100%;
+    }
+    .chart-shell {
+      position: relative;
+      min-height: 340px;
+    }
+    .chips-wrap {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      text-decoration: none;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      font-size: .9rem;
+      white-space: nowrap;
+    }
+    .chip:hover {
+      background: #f8fbff;
+      color: var(--accent);
+      border-color: #bdd4ea;
+    }
+    details.eta-group {
+      margin-top: 18px;
+      background: var(--card-strong);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      scroll-margin-top: 90px;
+    }
+    details.eta-group > summary {
+      list-style: none;
+      cursor: pointer;
+      position: relative;
+      padding: 18px 118px 18px 58px;
+      display: grid;
+      grid-template-columns: minmax(220px, 1.1fr) repeat(4, minmax(0, .6fr));
+      gap: 16px;
+      align-items: center;
+      background: linear-gradient(180deg, #f7fbff 0%, #edf4fb 100%);
+      transition: background-color .18s ease, box-shadow .18s ease, transform .18s ease;
+    }
+    details.eta-group > summary:hover {
+      background: linear-gradient(180deg, #ffffff 0%, #eef6ff 100%);
+    }
+    details.eta-group > summary::before {
+      content: "›";
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1.8rem;
+      line-height: 1;
+      color: var(--accent);
+      font-weight: 700;
+      transition: transform .18s ease;
+    }
+    details.eta-group[open] > summary::before {
+      transform: translateY(-50%) rotate(90deg);
+    }
+    details.eta-group > summary::after {
+      content: "Expand";
+      position: absolute;
+      right: 18px;
+      top: 18px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid #c4d7ea;
+      background: #e8f2fb;
+      color: var(--accent);
+      font-size: .74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+    details.eta-group > summary::-webkit-details-marker {
+      display: none;
+    }
+    details.eta-group[open] > summary {
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #edf4fb 0%, #e6eff9 100%);
+    }
+    details.eta-group[open] > summary::after {
+      content: "Collapse";
+      background: #f2f7fc;
+    }
+    .eta-heading {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .eta-date {
+      font-weight: 700;
+      font-size: 1.06rem;
+      letter-spacing: -.01em;
+    }
+    .eta-meta {
+      color: var(--muted);
+      font-size: .9rem;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: .8rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .status-overdue {
+      background: var(--danger-soft);
+      color: var(--danger);
+    }
+    .status-soon {
+      background: var(--warning-soft);
+      color: var(--warning);
+    }
+    .status-future {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .status-onpick {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+    .summary-metric {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 0;
+    }
+    .summary-metric .label {
+      color: var(--muted);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .summary-metric .value {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .group-body {
+      padding: 18px 20px 20px;
+      background: #ffffff;
+    }
+    .subcards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .subcard {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+      background: #fbfdff;
+    }
+    .subcard .label {
+      font-size: .78rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+    }
+    .subcard .value {
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .table-shell {
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      font-size: .92rem;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background: #f6f9fc;
+      color: var(--muted);
+      font-size: .78rem;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 11px 14px;
+      border-bottom: 1px solid #eef3f8;
+      vertical-align: top;
+    }
+    tbody tr:hover {
+      background: #f8fbff;
+    }
+    tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .num {
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .product-name {
+      font-weight: 600;
+      min-width: 280px;
+    }
+    .muted {
+      color: var(--muted);
+    }
+    .summary-section {
+      padding: 20px;
+      margin-top: 18px;
+    }
+    .empty-state {
+      padding: 28px;
+      text-align: center;
+      color: var(--muted);
+    }
+    .footnote {
+      color: var(--muted);
+      font-size: .88rem;
+      margin-top: 18px;
+    }
+    @media (max-width: 1200px) {
+      .kpi-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+      }
+      .toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+      details.eta-group > summary {
+        grid-template-columns: 1fr 1fr;
+      }
+      .subcards {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+    @media (max-width: 768px) {
+      .page-wrap {
+        padding: 16px 12px 32px;
+      }
+      .hero {
+        padding: 22px 18px;
+      }
+      .kpi-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .toolbar {
+        grid-template-columns: 1fr;
+        position: static;
+      }
+      details.eta-group > summary {
+        grid-template-columns: 1fr;
+        padding-right: 52px;
+      }
+      details.eta-group > summary::after {
+        display: none;
+      }
+      .subcards {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <header class="hero">
+      <div class="eyebrow">Backorder dashboard</div>
+      <h1>Outstanding stock by ETA</h1>
+      <p>
+        A shareable single-page view of what is still outstanding, when it is expected to reach the Melbourne warehouse,
+        and which products and purchase orders are carrying the largest remaining quantities.
+      </p>
+      <div class="hero-meta">
+        <span class="chip"><i class="bi bi-file-earmark-spreadsheet"></i> Source: Backorder Report WE 09.03.2026.xlsx</span>
+        <span class="chip"><i class="bi bi-calendar-event"></i> Dashboard reference date: 23 Mar 2026</span>
+        <span class="chip"><i class="bi bi-info-circle"></i> Outstanding = Backorder Qty + On Pick Qty</span>
+      </div>
+    </header>
+
+    <section class="kpi-grid" id="kpiGrid"></section>
+
+    <div class="section-divider" aria-hidden="true"></div>
+
+    <section class="surface toolbar mt-3">
+      <div>
+        <label class="form-label" for="searchInput">Search product, product code, or PO</label>
+        <input id="searchInput" class="form-control" type="text" placeholder="e.g. gown, 15766, 23290" />
+      </div>
+      <div>
+        <label class="form-label" for="stockTypeSelect">Stock type</label>
+        <select id="stockTypeSelect" class="form-select">
+          <option value="all">All stock types</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label" for="etaStatusSelect">ETA window</label>
+        <select id="etaStatusSelect" class="form-select">
+          <option value="all">All ETA dates</option>
+          <option value="overdue">Overdue</option>
+          <option value="next14">Next 14 days</option>
+          <option value="next30">Next 30 days</option>
+          <option value="future">Later future ETAs</option>
+        </select>
+      </div>
+      <button class="btn btn-outline-secondary" id="resetFiltersBtn"><i class="bi bi-arrow-counterclockwise me-1"></i>Reset filters</button>
+      <button class="btn btn-primary" id="downloadCsvBtn"><i class="bi bi-download me-1"></i>Download filtered CSV</button>
+    </section>
+
+    <div class="section-divider" aria-hidden="true"></div>
+
+    <div class="row g-3 mt-1">
+      <div class="col-lg-8">
+        <section class="surface chart-card">
+          <div class="section-title">
+            <div>
+              <h2>Outstanding quantity by ETA</h2>
+              <p>Bar = outstanding quantity, line = line items</p>
+            </div>
+          </div>
+          <div class="chart-shell">
+            <canvas id="etaChart"></canvas>
+          </div>
+        </section>
+      </div>
+      <div class="col-lg-4">
+        <section class="surface chart-card">
+          <div class="section-title">
+            <div>
+              <h2>Stock type mix</h2>
+              <p>Based on outstanding quantity in the current filtered view</p>
+            </div>
+          </div>
+          <div class="chart-shell" style="min-height:300px">
+            <canvas id="stockTypeChart"></canvas>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="section-divider" aria-hidden="true"></div>
+
+    <section class="surface summary-section">
+      <div class="section-title">
+        <div>
+          <h2>ETA groups</h2>
+          <p>Chronological detail grouped by expected warehouse arrival date</p>
+        </div>
+        <div class="muted" id="resultsMeta"></div>
+      </div>
+      <div class="chips-wrap" id="etaChips"></div>
+      <div id="etaGroups"></div>
+      <div class="footnote">
+        ETA shown here is the report field <strong>ETA (time to Melbourne Warehouse)</strong>. Quantities and summaries update automatically when filters are applied.
+      </div>
+    </section>
+
+    <div class="row g-3 mt-1">
+      <div class="col-xl-7">
+        <section class="surface summary-section">
+          <div class="section-title">
+            <div>
+              <h2>Product summary</h2>
+              <p>Rolled up across all matching purchase orders and ETAs</p>
+            </div>
+          </div>
+          <div class="table-shell">
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Code</th>
+                  <th class="num">Outstanding</th>
+                  <th class="num">Backorder</th>
+                  <th class="num">On pick</th>
+                  <th class="num">Lines</th>
+                  <th>ETAs</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody id="productSummaryBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+      <div class="col-xl-5">
+        <section class="surface summary-section">
+          <div class="section-title">
+            <div>
+              <h2>PO summary</h2>
+              <p>Useful when following up order-level status</p>
+            </div>
+          </div>
+          <div class="table-shell">
+            <table>
+              <thead>
+                <tr>
+                  <th>PO Ref</th>
+                  <th>PO Date</th>
+                  <th class="num">Outstanding</th>
+                  <th class="num">Lines</th>
+                  <th>ETA span</th>
+                  <th>Type</th>
+                </tr>
+              </thead>
+              <tbody id="poSummaryBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TODAY = "2026-03-23";
+    const rawData = [{"poDate": "2025-10-27", "poRef": "21261", "productCode": "15766", "product": "GOWN BLUE STUD SHOULDER (13213 WITH RFID)", "orderedQty": 900, "invoicedQty": 750, "deliveredPct": 0.8333333333333334, "backorderQty": 150, "onPickQty": 0, "eta": "2026-03-27", "stockType": "RSS", "outstandingQty": 150}, {"poDate": "2025-12-09", "poRef": "22165", "productCode": "13214", "product": "GOWN PC STUD SHLD/CHEST GREEN", "orderedQty": 990, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 990, "onPickQty": 0, "eta": "2026-04-17", "stockType": "MTO", "outstandingQty": 990}, {"poDate": "2025-12-09", "poRef": "22162", "productCode": "15766", "product": "GOWN BLUE STUD SHOULDER (13213 WITH RFID)", "orderedQty": 990, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 990, "onPickQty": 0, "eta": "2026-03-27", "stockType": "RSS", "outstandingQty": 990}, {"poDate": "2025-12-09", "poRef": "22165", "productCode": "16036", "product": "GOWN P/C PATIENT BLUE NO STUDS BACK NECK PC#13941 WITH RFID", "orderedQty": 900, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 900, "onPickQty": 0, "eta": "2026-03-27", "stockType": "MTO", "outstandingQty": 900}, {"poDate": "2025-12-09", "poRef": "22165", "productCode": "16038", "product": "QUEEN BED FLAT SHEET 250X305 #11030 WITH RFID", "orderedQty": 360, "invoicedQty": 108, "deliveredPct": 0.3, "backorderQty": 252, "onPickQty": 0, "eta": "2026-04-24", "stockType": "MTO", "outstandingQty": 252}, {"poDate": "2025-12-16", "poRef": "22278", "productCode": "12567", "product": "BAG LINEN PINK STUDS/ZIP", "orderedQty": 50, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 0, "onPickQty": 50, "eta": "2026-03-13", "stockType": "MTO", "outstandingQty": 50}, {"poDate": "2025-12-16", "poRef": "22278", "productCode": "16036", "product": "GOWN P/C PATIENT BLUE NO STUDS BACK NECK PC#13941 WITH RFID", "orderedQty": 480, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 480, "onPickQty": 0, "eta": "2026-04-17", "stockType": "MTO", "outstandingQty": 480}, {"poDate": "2026-01-14", "poRef": "22602", "productCode": "15274", "product": "T SHIRT BABY 8136 RFID INVENGO CHIP", "orderedQty": 1000, "invoicedQty": 800, "deliveredPct": 0.8, "backorderQty": 200, "onPickQty": 0, "eta": "2026-05-01", "stockType": "MTO", "outstandingQty": 200}, {"poDate": "2026-01-14", "poRef": "22602", "productCode": "15766", "product": "GOWN BLUE STUD SHOULDER (13213 WITH RFID)", "orderedQty": 5100, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 5100, "onPickQty": 0, "eta": "2026-05-01", "stockType": "RSS", "outstandingQty": 5100}, {"poDate": "2026-01-28", "poRef": "22165", "productCode": "15261", "product": "GOWN UTILITY WH LS 1749 RFID INVENGO CHIP", "orderedQty": 240, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 240, "onPickQty": 0, "eta": "2026-04-17", "stockType": "MTO", "outstandingQty": 240}, {"poDate": "2026-01-29", "poRef": "22866", "productCode": "15766", "product": "GOWN BLUE STUD SHOULDER (13213 WITH RFID)", "orderedQty": 6000, "invoicedQty": 2100, "deliveredPct": 0.35, "backorderQty": 3900, "onPickQty": 0, "eta": "2026-05-22", "stockType": "RSS", "outstandingQty": 3900}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "5702", "product": "DRAPE GREEN 135X120", "orderedQty": 500, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 500, "onPickQty": 0, "eta": "2026-05-08", "stockType": "MTO", "outstandingQty": 500}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "13214", "product": "GOWN PC STUD SHLD/CHEST GREEN", "orderedQty": 510, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 510, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 510}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "15083", "product": "SHEET PROC PC BLUE 50X140 RFID", "orderedQty": 500, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 500, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 500}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "15241", "product": "SHEET WHITE C28 PAT 1661 RFID INVENGO CHIP", "orderedQty": 350, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 350, "onPickQty": 0, "eta": "2026-05-15", "stockType": "MTO", "outstandingQty": 350}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "15247", "product": "COAT PYJ GREEN XL/43 4576 RFID  INVENGO CHIP", "orderedQty": 500, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 500, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 500}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "15251", "product": "PYJAMA PANT SUMMER/6 5572 RFID INVENGO CHIP", "orderedQty": 280, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 280, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 280}, {"poDate": "2026-02-03", "poRef": "22899", "productCode": "15266", "product": "WRAP FLANNELETTE 7359 RFID INVENGO CHIP", "orderedQty": 2960, "invoicedQty": 560, "deliveredPct": 0.1891891891891892, "backorderQty": 2400, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 2400}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "15266", "product": "WRAP FLANNELETTE 7359 RFID INVENGO CHIP", "orderedQty": 1600, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 1600, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 1600}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "15274", "product": "T SHIRT BABY 8136 RFID INVENGO CHIP", "orderedQty": 200, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 200, "onPickQty": 0, "eta": "2026-05-01", "stockType": "MTO", "outstandingQty": 200}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "15301", "product": "SOCK COTTON HB WHITE (EACH) FSH RFID 7351 INVENGO CHIP", "orderedQty": 500, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 500, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 500}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "15766", "product": "GOWN BLUE STUD SHOULDER (13213 WITH RFID)", "orderedQty": 2010, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 2010, "onPickQty": 0, "eta": "2026-05-22", "stockType": "RSS", "outstandingQty": 2010}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "16035", "product": "GOWN P/C PATIENT NAVY OBESE SS PC #10972 WITH RFID", "orderedQty": 300, "invoicedQty": 120, "deliveredPct": 0.4, "backorderQty": 180, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 180}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "16036", "product": "GOWN P/C PATIENT BLUE NO STUDS BACK NECK PC#13941 WITH RFID", "orderedQty": 300, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 300, "onPickQty": 0, "eta": "2026-04-17", "stockType": "MTO", "outstandingQty": 300}, {"poDate": "2026-02-03", "poRef": "22900", "productCode": "16041", "product": "TOP PYJAMA 2XL MAROON PC#11395 RFID", "orderedQty": 250, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 250, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 250}, {"poDate": "2026-02-09", "poRef": "23049", "productCode": "15266", "product": "WRAP FLANNELETTE 7359 RFID INVENGO CHIP", "orderedQty": 5200, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 5200, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 5200}, {"poDate": "2026-02-09", "poRef": "23050 & 21937", "productCode": "17496", "product": "BAG POLY LINEN BLUE ZIP 37X37X75", "orderedQty": 350, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 350, "onPickQty": 0, "eta": "2026-05-15", "stockType": "MTO", "outstandingQty": 350}, {"poDate": "2026-02-10", "poRef": "23050", "productCode": "16042", "product": "PANT PYJAMA ADULT BLUE PC# 11396 WITH RFID", "orderedQty": 60, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 60, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 60}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "15081", "product": "CLOTH PRIVACY CT WH 60X60 RFID", "orderedQty": 350, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 350, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 350}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "15244", "product": "PANT PYJ SAND LGE/41 4180 RFID INVENGO CHIP", "orderedQty": 700, "invoicedQty": 630, "deliveredPct": 0.9, "backorderQty": 70, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 70}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "15247", "product": "COAT PYJ GREEN XL/43 4576 RFID  INVENGO CHIP", "orderedQty": 500, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 500, "onPickQty": 0, "eta": "2026-06-19", "stockType": "MTO", "outstandingQty": 500}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "15251", "product": "PYJAMA PANT SUMMER/6 5572 RFID INVENGO CHIP", "orderedQty": 140, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 140, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 140}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "15266", "product": "WRAP FLANNELETTE 7359 RFID INVENGO CHIP", "orderedQty": 4000, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 4000, "onPickQty": 0, "eta": "2026-06-05", "stockType": "MTO", "outstandingQty": 4000}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "15301", "product": "SOCK COTTON HB WHITE (EACH) FSH RFID 7351 INVENGO CHIP", "orderedQty": 500, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 500, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 500}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "15766", "product": "GOWN BLUE STUD SHOULDER (13213 WITH RFID)", "orderedQty": 990, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 990, "onPickQty": 0, "eta": "2026-05-22", "stockType": "RSS", "outstandingQty": 990}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "16035", "product": "GOWN P/C PATIENT NAVY OBESE SS PC #10972 WITH RFID", "orderedQty": 300, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 300, "onPickQty": 0, "eta": "2026-06-05", "stockType": "MTO", "outstandingQty": 300}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "16036", "product": "GOWN P/C PATIENT BLUE NO STUDS BACK NECK PC#13941 WITH RFID", "orderedQty": 300, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 300, "onPickQty": 0, "eta": "2026-04-17", "stockType": "MTO", "outstandingQty": 300}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "16039", "product": "PYJAMA PANTS TEAL SIZE AL/43 PC #4577 WITH RFID", "orderedQty": 700, "invoicedQty": 210, "deliveredPct": 0.3, "backorderQty": 490, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 490}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "16040", "product": "PANT PJYAMA 2XL MAROON PC # 11934 WITH RFID", "orderedQty": 350, "invoicedQty": 140, "deliveredPct": 0.4, "backorderQty": 210, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 210}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "16041", "product": "TOP PYJAMA 2XL MAROON PC#11395 RFID", "orderedQty": 250, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 250, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 250}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "16042", "product": "PANT PYJAMA ADULT BLUE PC# 11396 WITH RFID", "orderedQty": 300, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 300, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 300}, {"poDate": "2026-02-23", "poRef": "23290", "productCode": "16043", "product": "TOP PYJAMA ADULT BLUE PC#11397 WITH RFID", "orderedQty": 250, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 250, "onPickQty": 0, "eta": "2026-05-22", "stockType": "MTO", "outstandingQty": 250}, {"poDate": "2026-03-03", "poRef": "23050", "productCode": "16041", "product": "TOP PYJAMA 2XL MAROON PC#11395 RFID", "orderedQty": 50, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 50, "onPickQty": 0, "eta": "2026-06-05", "stockType": "MTO", "outstandingQty": 50}, {"poDate": "2026-03-03", "poRef": "23050", "productCode": "16043", "product": "TOP PYJAMA ADULT BLUE PC#11397 WITH RFID", "orderedQty": 400, "invoicedQty": 0, "deliveredPct": 0.0, "backorderQty": 400, "onPickQty": 0, "eta": "2026-06-05", "stockType": "MTO", "outstandingQty": 400}];
+
+    const els = {
+      kpiGrid: document.getElementById('kpiGrid'),
+      searchInput: document.getElementById('searchInput'),
+      stockTypeSelect: document.getElementById('stockTypeSelect'),
+      etaStatusSelect: document.getElementById('etaStatusSelect'),
+      resetFiltersBtn: document.getElementById('resetFiltersBtn'),
+      downloadCsvBtn: document.getElementById('downloadCsvBtn'),
+      etaChips: document.getElementById('etaChips'),
+      etaGroups: document.getElementById('etaGroups'),
+      resultsMeta: document.getElementById('resultsMeta'),
+      productSummaryBody: document.getElementById('productSummaryBody'),
+      poSummaryBody: document.getElementById('poSummaryBody'),
+      etaChart: document.getElementById('etaChart'),
+      stockTypeChart: document.getElementById('stockTypeChart')
+    };
+
+    const state = {
+      search: '',
+      stockType: 'all',
+      etaStatus: 'all'
+    };
+
+    let etaChart;
+    let stockTypeChart;
+
+    function parseDate(iso) {
+      return new Date(iso + 'T00:00:00');
+    }
+
+    function daysDiff(iso) {
+      const oneDay = 24 * 60 * 60 * 1000;
+      return Math.round((parseDate(iso) - parseDate(TODAY)) / oneDay);
+    }
+
+    function formatDate(iso) {
+      return new Intl.DateTimeFormat('en-AU', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      }).format(parseDate(iso));
+    }
+
+    function formatQty(value) {
+      return new Intl.NumberFormat('en-AU').format(value || 0);
+    }
+
+    function formatPct(value) {
+      return new Intl.NumberFormat('en-AU', {
+        style: 'percent',
+        maximumFractionDigits: 1
+      }).format(value || 0);
+    }
+
+    function statusForEta(iso) {
+      const d = daysDiff(iso);
+      if (d < 0) return { key: 'overdue', label: `${Math.abs(d)} day${Math.abs(d) === 1 ? '' : 's'} overdue`, cls: 'status-overdue', icon: 'bi-exclamation-triangle-fill' };
+      if (d <= 14) return { key: 'soon', label: d === 0 ? 'Due today' : `${d} day${d === 1 ? '' : 's'} away`, cls: 'status-soon', icon: 'bi-clock-fill' };
+      return { key: 'future', label: `${d} days away`, cls: 'status-future', icon: 'bi-calendar-check-fill' };
+    }
+
+    function stockTypeBadge(type) {
+      const cls = type === 'RSS' ? 'status-future' : 'status-onpick';
+      return `<span class="status-pill ${cls}">${type}</span>`;
+    }
+
+    function csvSafe(value) {
+      const str = String(value ?? '');
+      if (/[",\n]/.test(str)) return `"${str.replace(/"/g, '""')}"`;
+      return str;
+    }
+
+    function groupBy(arr, keyFn) {
+      return arr.reduce((acc, item) => {
+        const key = keyFn(item);
+        (acc[key] ||= []).push(item);
+        return acc;
+      }, {});
+    }
+
+    function getFilteredRecords() {
+      const search = state.search.trim().toLowerCase();
+      return rawData.filter(r => {
+        const searchMatch = !search || [r.product, r.productCode, r.poRef].some(v => String(v).toLowerCase().includes(search));
+        const stockMatch = state.stockType === 'all' || r.stockType === state.stockType;
+        const dayDelta = daysDiff(r.eta);
+        let etaMatch = true;
+        switch (state.etaStatus) {
+          case 'overdue':
+            etaMatch = dayDelta < 0;
+            break;
+          case 'next14':
+            etaMatch = dayDelta >= 0 && dayDelta <= 14;
+            break;
+          case 'next30':
+            etaMatch = dayDelta >= 0 && dayDelta <= 30;
+            break;
+          case 'future':
+            etaMatch = dayDelta > 30;
+            break;
+        }
+        return searchMatch && stockMatch && etaMatch;
+      });
+    }
+
+    function summarise(records) {
+      const totals = records.reduce((acc, r) => {
+        acc.ordered += r.orderedQty;
+        acc.invoiced += r.invoicedQty;
+        acc.backorder += r.backorderQty;
+        acc.onPick += r.onPickQty;
+        acc.outstanding += r.outstandingQty;
+        return acc;
+      }, { ordered: 0, invoiced: 0, backorder: 0, onPick: 0, outstanding: 0 });
+
+      const etaGroups = Object.entries(groupBy(records, r => r.eta))
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([eta, items]) => {
+          const outstanding = items.reduce((sum, x) => sum + x.outstandingQty, 0);
+          const backorder = items.reduce((sum, x) => sum + x.backorderQty, 0);
+          const onPick = items.reduce((sum, x) => sum + x.onPickQty, 0);
+          const ordered = items.reduce((sum, x) => sum + x.orderedQty, 0);
+          const invoiced = items.reduce((sum, x) => sum + x.invoicedQty, 0);
+          const types = [...new Set(items.map(x => x.stockType))].sort();
+          return { eta, items, outstanding, backorder, onPick, ordered, invoiced, lineItems: items.length, stockTypes: types };
+        });
+
+      const nextEta = etaGroups.find(g => daysDiff(g.eta) >= 0)?.eta || null;
+      const overdueCount = etaGroups.filter(g => daysDiff(g.eta) < 0).length;
+      const latestEta = etaGroups.at(-1)?.eta || null;
+      const largestBucket = etaGroups.slice().sort((a, b) => b.outstanding - a.outstanding)[0] || null;
+
+      const stockTypes = Object.entries(groupBy(records, r => r.stockType))
+        .map(([stockType, items]) => ({
+          stockType,
+          outstanding: items.reduce((sum, x) => sum + x.outstandingQty, 0)
+        }))
+        .sort((a, b) => b.outstanding - a.outstanding);
+
+      return {
+        totals,
+        etaGroups,
+        stockTypes,
+        nextEta,
+        latestEta,
+        overdueCount,
+        largestBucket
+      };
+    }
+
+    function renderKpis(records, summary) {
+      const cards = [
+        {
+          icon: 'bi-box-seam',
+          label: 'Outstanding qty',
+          value: formatQty(summary.totals.outstanding),
+          sub: `Backorder ${formatQty(summary.totals.backorder)} · On pick ${formatQty(summary.totals.onPick)}`
+        },
+        {
+          icon: 'bi-list-ul',
+          label: 'Open line items',
+          value: formatQty(records.length),
+          sub: `${formatQty(summary.etaGroups.length)} ETA group${summary.etaGroups.length === 1 ? '' : 's'}`
+        },
+        {
+          icon: 'bi-calendar-plus',
+          label: 'Next ETA',
+          value: summary.nextEta ? formatDate(summary.nextEta) : '—',
+          sub: summary.nextEta ? statusForEta(summary.nextEta).label : 'No future ETA in view'
+        },
+        {
+          icon: 'bi-calendar-range',
+          label: 'Latest ETA',
+          value: summary.latestEta ? formatDate(summary.latestEta) : '—',
+          sub: summary.latestEta ? `${Math.max(daysDiff(summary.latestEta), 0)} days from reference date` : '—'
+        },
+        {
+          icon: 'bi-exclamation-diamond',
+          label: 'Overdue ETA groups',
+          value: formatQty(summary.overdueCount),
+          sub: summary.overdueCount ? 'Outstanding quantity still attached to past ETA dates' : 'No overdue ETA groups in view'
+        },
+        {
+          icon: 'bi-stack',
+          label: 'Largest ETA bucket',
+          value: summary.largestBucket ? formatQty(summary.largestBucket.outstanding) : '—',
+          sub: summary.largestBucket ? `${formatDate(summary.largestBucket.eta)} · ${summary.largestBucket.lineItems} line items` : '—'
+        }
+      ];
+
+      els.kpiGrid.innerHTML = cards.map(card => `
+        <div class="surface kpi-card">
+          <div class="kpi-label"><i class="bi ${card.icon}"></i> ${card.label}</div>
+          <div class="kpi-value">${card.value}</div>
+          <div class="kpi-sub">${card.sub}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderEtaChips(etaGroups) {
+      els.etaChips.innerHTML = etaGroups.map(group => {
+        const status = statusForEta(group.eta);
+        const badgeText = status.key === 'future' ? 'Future' : status.key === 'soon' ? 'Soon' : 'Overdue';
+        return `
+          <a class="chip" href="#eta-${group.eta}">
+            <span>${formatDate(group.eta)}</span>
+            <span class="muted">${formatQty(group.outstanding)}</span>
+            <span class="status-pill ${status.cls}"><i class="bi ${status.icon}"></i>${badgeText}</span>
+          </a>
+        `;
+      }).join('');
+    }
+
+    function renderEtaGroups(etaGroups) {
+      if (!etaGroups.length) {
+        els.etaGroups.innerHTML = `<div class="empty-state">No records match the current filters.</div>`;
+        return;
+      }
+
+      const firstFuture = etaGroups.find(g => daysDiff(g.eta) >= 0)?.eta;
+
+      els.etaGroups.innerHTML = etaGroups.map(group => {
+        const status = statusForEta(group.eta);
+        const openAttr = (status.key === 'overdue' || group.eta === firstFuture) ? 'open' : '';
+        const deliveryPct = group.ordered ? group.invoiced / group.ordered : 0;
+        const rows = group.items
+          .slice()
+          .sort((a, b) => b.outstandingQty - a.outstandingQty || a.product.localeCompare(b.product))
+          .map(row => `
+            <tr>
+              <td class="product-name">${row.product}</td>
+              <td>${row.productCode}</td>
+              <td>${row.poRef}</td>
+              <td>${formatDate(row.poDate)}</td>
+              <td class="num">${formatQty(row.orderedQty)}</td>
+              <td class="num">${formatQty(row.invoicedQty)}</td>
+              <td class="num">${formatPct(row.deliveredPct)}</td>
+              <td class="num">${formatQty(row.backorderQty)}</td>
+              <td class="num">${formatQty(row.onPickQty)}</td>
+              <td class="num"><strong>${formatQty(row.outstandingQty)}</strong></td>
+              <td>${stockTypeBadge(row.stockType)}</td>
+            </tr>
+          `).join('');
+
+        return `
+          <details class="eta-group" id="eta-${group.eta}" ${openAttr}>
+            <summary>
+              <div class="eta-heading">
+                <div>
+                  <div class="eta-date">${formatDate(group.eta)}</div>
+                  <div class="eta-meta">ETA to Melbourne warehouse • click to expand details</div>
+                </div>
+                <span class="status-pill ${status.cls}"><i class="bi ${status.icon}"></i>${status.label}</span>
+              </div>
+              <div class="summary-metric">
+                <span class="label">Outstanding</span>
+                <span class="value">${formatQty(group.outstanding)}</span>
+              </div>
+              <div class="summary-metric">
+                <span class="label">Line items</span>
+                <span class="value">${formatQty(group.lineItems)}</span>
+              </div>
+              <div class="summary-metric">
+                <span class="label">Backorder / On pick</span>
+                <span class="value">${formatQty(group.backorder)} / ${formatQty(group.onPick)}</span>
+              </div>
+              <div class="summary-metric">
+                <span class="label">Stock types</span>
+                <span class="value">${group.stockTypes.join(', ')}</span>
+              </div>
+            </summary>
+            <div class="group-body">
+              <div class="subcards">
+                <div class="subcard">
+                  <div class="label">Ordered qty</div>
+                  <div class="value">${formatQty(group.ordered)}</div>
+                </div>
+                <div class="subcard">
+                  <div class="label">Invoiced qty</div>
+                  <div class="value">${formatQty(group.invoiced)}</div>
+                </div>
+                <div class="subcard">
+                  <div class="label">Delivered %</div>
+                  <div class="value">${formatPct(deliveryPct)}</div>
+                </div>
+                <div class="subcard">
+                  <div class="label">PO count</div>
+                  <div class="value">${formatQty(new Set(group.items.map(x => x.poRef)).size)}</div>
+                </div>
+              </div>
+              <div class="table-shell">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Code</th>
+                      <th>PO Ref</th>
+                      <th>PO Date</th>
+                      <th class="num">Ordered</th>
+                      <th class="num">Invoiced</th>
+                      <th class="num">% delivered</th>
+                      <th class="num">Backorder</th>
+                      <th class="num">On pick</th>
+                      <th class="num">Outstanding</th>
+                      <th>Type</th>
+                    </tr>
+                  </thead>
+                  <tbody>${rows}</tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+        `;
+      }).join('');
+    }
+
+    function renderProductSummary(records) {
+      if (!records.length) {
+        els.productSummaryBody.innerHTML = `<tr><td colspan="8" class="empty-state">No matching products.</td></tr>`;
+        return;
+      }
+      const summary = Object.values(records.reduce((acc, r) => {
+        const key = `${r.productCode}__${r.product}`;
+        acc[key] ||= {
+          product: r.product,
+          productCode: r.productCode,
+          outstanding: 0,
+          backorder: 0,
+          onPick: 0,
+          lines: 0,
+          etas: new Set(),
+          stockTypes: new Set()
+        };
+        acc[key].outstanding += r.outstandingQty;
+        acc[key].backorder += r.backorderQty;
+        acc[key].onPick += r.onPickQty;
+        acc[key].lines += 1;
+        acc[key].etas.add(r.eta);
+        acc[key].stockTypes.add(r.stockType);
+        return acc;
+      }, {}))
+      .map(item => ({
+        ...item,
+        etaCount: item.etas.size,
+        stockTypeText: [...item.stockTypes].sort().join(', ')
+      }))
+      .sort((a, b) => b.outstanding - a.outstanding || a.product.localeCompare(b.product));
+
+      els.productSummaryBody.innerHTML = summary.map(item => `
+        <tr>
+          <td class="product-name">${item.product}</td>
+          <td>${item.productCode}</td>
+          <td class="num"><strong>${formatQty(item.outstanding)}</strong></td>
+          <td class="num">${formatQty(item.backorder)}</td>
+          <td class="num">${formatQty(item.onPick)}</td>
+          <td class="num">${formatQty(item.lines)}</td>
+          <td>${item.etaCount} ETA${item.etaCount === 1 ? '' : 's'}</td>
+          <td>${item.stockTypeText}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderPoSummary(records) {
+      if (!records.length) {
+        els.poSummaryBody.innerHTML = `<tr><td colspan="6" class="empty-state">No matching purchase orders.</td></tr>`;
+        return;
+      }
+      const summary = Object.values(records.reduce((acc, r) => {
+        acc[r.poRef] ||= {
+          poRef: r.poRef,
+          poDate: r.poDate,
+          outstanding: 0,
+          lines: 0,
+          etas: new Set(),
+          stockTypes: new Set()
+        };
+        acc[r.poRef].outstanding += r.outstandingQty;
+        acc[r.poRef].lines += 1;
+        acc[r.poRef].etas.add(r.eta);
+        acc[r.poRef].stockTypes.add(r.stockType);
+        return acc;
+      }, {}))
+      .map(item => {
+        const sortedEtas = [...item.etas].sort();
+        return {
+          ...item,
+          etaSpan: sortedEtas.length === 1 ? formatDate(sortedEtas[0]) : `${formatDate(sortedEtas[0])} → ${formatDate(sortedEtas.at(-1))}`,
+          stockTypeText: [...item.stockTypes].sort().join(', ')
+        };
+      })
+      .sort((a, b) => b.outstanding - a.outstanding || a.poRef.localeCompare(b.poRef));
+
+      els.poSummaryBody.innerHTML = summary.map(item => `
+        <tr>
+          <td><strong>${item.poRef}</strong></td>
+          <td>${formatDate(item.poDate)}</td>
+          <td class="num"><strong>${formatQty(item.outstanding)}</strong></td>
+          <td class="num">${formatQty(item.lines)}</td>
+          <td>${item.etaSpan}</td>
+          <td>${item.stockTypeText}</td>
+        </tr>
+      `).join('');
+    }
+
+    function renderCharts(summary) {
+      const etaLabels = summary.etaGroups.map(g => formatDate(g.eta));
+      const outstandingData = summary.etaGroups.map(g => g.outstanding);
+      const lineData = summary.etaGroups.map(g => g.lineItems);
+
+      if (etaChart) etaChart.destroy();
+      etaChart = new Chart(els.etaChart, {
+        type: 'bar',
+        data: {
+          labels: etaLabels,
+          datasets: [
+            {
+              type: 'bar',
+              label: 'Outstanding qty',
+              data: outstandingData,
+              borderRadius: 8,
+              backgroundColor: 'rgba(15, 94, 168, 0.82)',
+              borderColor: 'rgba(15, 94, 168, 1)',
+              borderWidth: 1,
+              yAxisID: 'y'
+            },
+            {
+              type: 'line',
+              label: 'Line items',
+              data: lineData,
+              borderColor: 'rgba(180, 35, 24, 1)',
+              backgroundColor: 'rgba(180, 35, 24, 0.14)',
+              tension: 0.28,
+              pointRadius: 4,
+              pointHoverRadius: 5,
+              pointBackgroundColor: 'rgba(180, 35, 24, 1)',
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            legend: {
+              position: 'bottom'
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => ctx.dataset.label.includes('qty')
+                  ? `${ctx.dataset.label}: ${formatQty(ctx.raw)}`
+                  : `${ctx.dataset.label}: ${ctx.raw}`
+              }
+            }
+          },
+          scales: {
+            x: {
+              ticks: {
+                maxRotation: 0,
+                autoSkip: false
+              },
+              grid: {
+                display: false
+              }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (value) => formatQty(value)
+              },
+              title: {
+                display: true,
+                text: 'Outstanding qty'
+              }
+            },
+            y1: {
+              position: 'right',
+              beginAtZero: true,
+              grid: {
+                drawOnChartArea: false
+              },
+              title: {
+                display: true,
+                text: 'Line items'
+              }
+            }
+          }
+        }
+      });
+
+      if (stockTypeChart) stockTypeChart.destroy();
+      stockTypeChart = new Chart(els.stockTypeChart, {
+        type: 'doughnut',
+        data: {
+          labels: summary.stockTypes.map(s => s.stockType),
+          datasets: [{
+            data: summary.stockTypes.map(s => s.outstanding),
+            backgroundColor: [
+              'rgba(15, 94, 168, 0.9)',
+              'rgba(10, 107, 59, 0.84)',
+              'rgba(154, 103, 0, 0.84)',
+              'rgba(180, 35, 24, 0.82)'
+            ],
+            borderColor: '#ffffff',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom'
+            },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.label}: ${formatQty(ctx.raw)}`
+              }
+            }
+          },
+          cutout: '62%'
+        }
+      });
+    }
+
+    function updateResultsMeta(records, summary) {
+      const searchText = state.search.trim();
+      const filters = [
+        searchText ? `search: “${searchText}”` : null,
+        state.stockType !== 'all' ? `stock type: ${state.stockType}` : null,
+        state.etaStatus !== 'all' ? `ETA window: ${els.etaStatusSelect.options[els.etaStatusSelect.selectedIndex].text}` : null
+      ].filter(Boolean);
+
+      const base = `${formatQty(records.length)} line item${records.length === 1 ? '' : 's'} · ${formatQty(summary.totals.outstanding)} outstanding`;
+      els.resultsMeta.textContent = filters.length ? `${base} · filtered by ${filters.join(' · ')}` : base;
+    }
+
+    function downloadFilteredCsv(records) {
+      const headers = [
+        'ETA','PO Date','PO Ref','Product Code','Product','Stock Type',
+        'Ordered Qty','Invoiced Qty','% Delivered','Backorder Qty','On Pick Qty','Outstanding Qty'
+      ];
+      const lines = [
+        headers.join(','),
+        ...records.map(r => [
+          r.eta,
+          r.poDate,
+          r.poRef,
+          r.productCode,
+          r.product,
+          r.stockType,
+          r.orderedQty,
+          r.invoicedQty,
+          r.deliveredPct,
+          r.backorderQty,
+          r.onPickQty,
+          r.outstandingQty
+        ].map(csvSafe).join(','))
+      ];
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'backorder_dashboard_filtered.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function update() {
+      const records = getFilteredRecords();
+      const summary = summarise(records);
+      renderKpis(records, summary);
+      renderEtaChips(summary.etaGroups);
+      renderEtaGroups(summary.etaGroups);
+      renderProductSummary(records);
+      renderPoSummary(records);
+      renderCharts(summary);
+      updateResultsMeta(records, summary);
+    }
+
+    function populateStockTypes() {
+      const types = [...new Set(rawData.map(r => r.stockType))].sort();
+      els.stockTypeSelect.insertAdjacentHTML('beforeend', types.map(type => `<option value="${type}">${type}</option>`).join(''));
+    }
+
+    els.searchInput.addEventListener('input', e => {
+      state.search = e.target.value;
+      update();
+    });
+
+    els.stockTypeSelect.addEventListener('change', e => {
+      state.stockType = e.target.value;
+      update();
+    });
+
+    els.etaStatusSelect.addEventListener('change', e => {
+      state.etaStatus = e.target.value;
+      update();
+    });
+
+    els.resetFiltersBtn.addEventListener('click', () => {
+      state.search = '';
+      state.stockType = 'all';
+      state.etaStatus = 'all';
+      els.searchInput.value = '';
+      els.stockTypeSelect.value = 'all';
+      els.etaStatusSelect.value = 'all';
+      update();
+    });
+
+    els.downloadCsvBtn.addEventListener('click', () => {
+      downloadFilteredCsv(getFilteredRecords());
+    });
+
+    populateStockTypes();
+    update();
+  </script>
+</body>
+</html>
